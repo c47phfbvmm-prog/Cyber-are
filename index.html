@@ -2,178 +2,152 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Cyber Typing Trainer PRO</title>
+<title>Cyber Typing Trainer</title>
 <style>
 body{
-    background:#0b0f14;
-    color:#00ff9c;
-    font-family: monospace;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    margin:0;
+  background:#0b0f14;
+  color:#00ff9c;
+  font-family:monospace;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  margin:0;
 }
 .app{
-    width:720px;
-    background:#111;
-    padding:25px;
-    border-radius:14px;
+  width:760px;
+  background:#111;
+  padding:25px;
+  border-radius:14px;
 }
 h1{text-align:center;margin:0 0 10px;}
-.controls{
-    display:flex;
-    gap:10px;
-}
+.controls{display:flex;gap:10px;}
 select,button,input{
-    flex:1;
-    padding:10px;
-    background:#000;
-    color:#00ff9c;
-    border:1px solid #333;
+  flex:1;
+  padding:10px;
+  background:#000;
+  color:#00ff9c;
+  border:1px solid #333;
 }
 .command{
-    margin-top:20px;
-    font-size:18px;
-    line-height:1.6;
-    word-wrap:break-word;
+  margin-top:20px;
+  font-size:18px;
+  line-height:1.6;
+  word-wrap:break-word;
 }
-.correctChar{color:#00ff00;}
-.wrongChar{color:#ff4c4c;}
-.pendingChar{color:#555;}
-input{
-    margin-top:15px;
-    font-size:16px;
-}
-.stats{
-    margin-top:10px;
-    font-size:14px;
-}
+.correct{color:#00ff00;}
+.wrong{color:#ff4c4c;}
+.pending{color:#555;}
+.stats{margin-top:10px;font-size:14px;}
 .progress{
-    margin-top:10px;
-    height:8px;
-    background:#222;
-    border-radius:6px;
-    overflow:hidden;
+  margin-top:10px;
+  height:8px;
+  background:#222;
+  border-radius:6px;
+  overflow:hidden;
 }
-.bar{
-    height:100%;
-    width:0%;
-    background:#00c8ff;
-}
+.bar{height:100%;width:0%;background:#00c8ff;}
 </style>
 </head>
 <body>
 
 <div class="app">
-<h1>Cyber Typing Trainer PRO</h1>
+<h1>Cyber Typing Trainer</h1>
 
 <div class="controls">
-<select id="difficulty">
-<option value="easy">Easy</option>
-<option value="medium">Medium</option>
-<option value="hard">Hard</option>
+<select id="tool">
+  <option value="linux">Linux Basics</option>
 </select>
 
-<select id="mode">
-<option value="general">General</option>
-<option value="network">Network</option>
-<option value="wifi">WiFi</option>
-<option value="web">Web</option>
-</select>
-
-<button onclick="nextCommand()">Skip</button>
+<button id="skipBtn">Skip</button>
+<button id="resetBtn">Restart</button>
 </div>
 
 <div class="command" id="command"></div>
-
 <input id="input" placeholder="Type the command exactly..." autocomplete="off">
-
-<div class="progress">
-  <div class="bar" id="bar"></div>
-</div>
-
+<div class="progress"><div class="bar" id="bar"></div></div>
 <div class="stats" id="stats"></div>
 </div>
 
 <script>
-const data={
-easy:{
-general:["whoami","pwd","ls -la"],
-network:["ip a","netstat -tulnp"],
-wifi:["iwconfig","airmon-ng"],
-web:["dirb http://test.com"]
-},
-medium:{
-general:["uname -a","history | tail"],
-network:["nmap -sS 192.168.1.1","tcpdump -i eth0"],
-wifi:["airmon-ng start wlan0","airodump-ng wlan0mon"],
-web:["sqlmap -u http://test.com --dbs"]
-},
-hard:{
-general:["find / -type f -name passwd 2>/dev/null"],
-network:["nmap -sS -sV -O -p 1-65535 192.168.1.1"],
-wifi:["airodump-ng --bssid AA:BB:CC:DD:EE:FF -c 6 wlan0mon"],
-web:["sqlmap -u http://test.com?id=1 --dump --batch"]
-}
+/* ===== TOOL COMMANDS (PHASE 1) ===== */
+const commands = {
+linux:[
+"whoami",
+"id",
+"pwd",
+"ls -la",
+"cd /var/www/html",
+"cat /etc/passwd",
+"history | tail",
+"ps aux",
+"df -h",
+"du -sh *",
+"chmod +x exploit.sh",
+"sudo -l"
+]
 };
 
-let target="",typed="",startTime;
-let done=0,total=10,errors=0;
+/* ===== CORE LOGIC ===== */
+let target="",typed="";
+let done=0,total=15,errors=0,startTime=null;
+
+function pickCommand(){
+  const tool=document.getElementById("tool").value;
+  const list=commands[tool];
+  return list[Math.floor(Math.random()*list.length)];
+}
 
 function render(){
- let html="";
- for(let i=0;i<target.length;i++){
-   if(i<typed.length){
-     html+= typed[i]===target[i]
-       ? `<span class="correctChar">${target[i]}</span>`
-       : `<span class="wrongChar">${target[i]}</span>`;
-   }else{
-     html+= `<span class="pendingChar">${target[i]}</span>`;
-   }
- }
- document.getElementById("command").innerHTML=html;
+  let html="";
+  for(let i=0;i<target.length;i++){
+    if(i<typed.length){
+      html+= typed[i]===target[i]
+        ? `<span class="correct">${target[i]}</span>`
+        : `<span class="wrong">${target[i]}</span>`;
+    }else{
+      html+= `<span class="pending">${target[i]}</span>`;
+    }
+  }
+  document.getElementById("command").innerHTML=html;
 }
 
 function nextCommand(){
- const d=document.getElementById("difficulty").value;
- const m=document.getElementById("mode").value;
- const list=data[d][m];
- target=list[Math.floor(Math.random()*list.length)];
- typed="";
- errors=0;
- document.getElementById("input").value="";
- document.getElementById("stats").textContent="";
- startTime=new Date();
- render();
- document.getElementById("bar").style.width=`${(done/total)*100}%`;
+  target=pickCommand();
+  typed="";
+  document.getElementById("input").value="";
+  startTime=Date.now();
+  render();
+  document.getElementById("bar").style.width=`${(done/total)*100}%`;
 }
 
 document.getElementById("input").addEventListener("input",e=>{
- typed=e.target.value;
- if(!target.startsWith(typed)) errors++;
- render();
- if(typed===target){
-   done++;
-   let time=(new Date()-startTime)/1000;
-   let wpm=Math.round((target.length/5)/(time/60));
-   document.getElementById("stats").innerHTML=
-   `✔ ${time.toFixed(2)}s | WPM ${wpm}`;
-   setTimeout(nextCommand,800);
- }
+  typed=e.target.value;
+  render();
+  if(!target.startsWith(typed)) errors++;
+  if(typed===target){
+    done++;
+    if(done>=total){
+      document.getElementById("stats").innerHTML=
+      `✔ Session Complete | Accuracy ${Math.max(0,100-errors)}%`;
+      return;
+    }
+    setTimeout(nextCommand,500);
+  }
 });
 
-/* تغيير الصعوبة أو النوع ينقلك فورًا */
-document.getElementById("difficulty").addEventListener("change", ()=>{
- done=0;
- document.getElementById("bar").style.width="0%";
- nextCommand();
-});
-document.getElementById("mode").addEventListener("change", ()=>{
- done=0;
- document.getElementById("bar").style.width="0%";
- nextCommand();
-});
+document.getElementById("skipBtn").onclick=()=>{
+  done++;
+  errors+=target.length;
+  nextCommand();
+};
+
+document.getElementById("resetBtn").onclick=()=>{
+  done=0;errors=0;
+  document.getElementById("bar").style.width="0%";
+  document.getElementById("stats").textContent="";
+  nextCommand();
+};
 
 nextCommand();
 </script>
