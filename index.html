@@ -57,6 +57,7 @@ select,button,input{
 <div class="controls">
 <select id="tool">
   <option value="linux">Linux Basics</option>
+  <option value="nmap">Nmap</option>
 </select>
 
 <button id="skipBtn">Skip</button>
@@ -70,21 +71,34 @@ select,button,input{
 </div>
 
 <script>
-/* ===== TOOL COMMANDS (PHASE 1) ===== */
+/* ===== TOOL COMMANDS ===== */
 const commands = {
 linux:[
-"whoami",
-"id",
-"pwd",
-"ls -la",
-"cd /var/www/html",
-"cat /etc/passwd",
-"history | tail",
-"ps aux",
-"df -h",
-"du -sh *",
-"chmod +x exploit.sh",
-"sudo -l"
+  "whoami",
+  "id",
+  "pwd",
+  "ls -la",
+  "cd /var/www/html",
+  "cat /etc/passwd",
+  "history | tail",
+  "ps aux",
+  "df -h",
+  "du -sh *",
+  "chmod +x exploit.sh",
+  "sudo -l"
+],
+
+nmap:[
+  "nmap 192.168.1.1",
+  "nmap -sS 192.168.1.1",
+  "nmap -sV 192.168.1.1",
+  "nmap -A 192.168.1.1",
+  "nmap -p 22,80,443 192.168.1.1",
+  "nmap -p- 192.168.1.1",
+  "nmap -sS -sV -O -p 1-65535 192.168.1.1",
+  "nmap --script vuln 192.168.1.1",
+  "nmap -T4 -Pn 192.168.1.1",
+  "nmap -oN scan.txt 192.168.1.1"
 ]
 };
 
@@ -143,6 +157,13 @@ document.getElementById("skipBtn").onclick=()=>{
 };
 
 document.getElementById("resetBtn").onclick=()=>{
+  done=0;errors=0;
+  document.getElementById("bar").style.width="0%";
+  document.getElementById("stats").textContent="";
+  nextCommand();
+};
+
+document.getElementById("tool").onchange=()=>{
   done=0;errors=0;
   document.getElementById("bar").style.width="0%";
   document.getElementById("stats").textContent="";
