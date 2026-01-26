@@ -15,7 +15,7 @@ body{
   margin:0;
 }
 .app{
-  width:760px;
+  width:780px;
   background:#111;
   padding:25px;
   border-radius:14px;
@@ -58,6 +58,7 @@ select,button,input{
 <select id="tool">
   <option value="linux">Linux Basics</option>
   <option value="nmap">Nmap</option>
+  <option value="sqlmap">SQLmap</option>
 </select>
 
 <button id="skipBtn">Skip</button>
@@ -99,6 +100,21 @@ nmap:[
   "nmap --script vuln 192.168.1.1",
   "nmap -T4 -Pn 192.168.1.1",
   "nmap -oN scan.txt 192.168.1.1"
+],
+
+sqlmap:[
+  "sqlmap -u http://site.com/index.php?id=1",
+  "sqlmap -u http://site.com/index.php?id=1 --dbs",
+  "sqlmap -u http://site.com/index.php?id=1 --tables",
+  "sqlmap -u http://site.com/index.php?id=1 --columns",
+  "sqlmap -u http://site.com/index.php?id=1 --dump",
+  "sqlmap -u http://site.com/index.php?id=1 --batch",
+  "sqlmap -u http://site.com/index.php?id=1 --risk=3 --level=5",
+  "sqlmap -r request.txt",
+  "sqlmap -r request.txt --dbs",
+  "sqlmap -r request.txt --dump",
+  "sqlmap --tamper=space2comment -u http://site.com/index.php?id=1",
+  "sqlmap --os-shell -u http://site.com/index.php?id=1"
 ]
 };
 
