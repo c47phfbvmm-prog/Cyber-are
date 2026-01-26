@@ -13,7 +13,7 @@
     height:100vh; margin:0; padding:16px;
   }
   .app{
-    width:min(980px, 100%);
+    width:min(1020px, 100%);
     background:#111;
     padding:22px;
     border-radius:14px;
@@ -33,9 +33,10 @@
     border-radius:10px;
     font-family:inherit;
   }
-  select{ min-width: 190px; }
+  select{ min-width: 170px; }
   button{ cursor:pointer; }
   button:active{ transform: translateY(1px); }
+  button[disabled]{ opacity:.45; cursor:not-allowed; }
   input{
     width:100%;
     margin-top:12px;
@@ -69,6 +70,20 @@
   }
   .muted{ color:#6fd8b4; opacity:.85; }
   .warn{ color:#ffcf66; }
+  .pill{
+    border:1px solid #2a2a2a;
+    background:#0a0a0a;
+    padding:8px 10px;
+    border-radius:10px;
+    font-size:12px;
+    color:#c7ffe8;
+  }
+  .hint{
+    margin-top:10px;
+    font-size:12px;
+    color:#6fd8b4;
+    opacity:.9;
+  }
 </style>
 </head>
 <body>
@@ -91,11 +106,23 @@
           <option value="hard">Hard</option>
         </select>
 
+        <select id="mode">
+          <option value="practice">Practice</option>
+          <option value="exam">Exam</option>
+        </select>
+
+        <select id="examCount" title="Number of questions in exam">
+          <option value="20">20 Q</option>
+          <option value="40">40 Q</option>
+          <option value="60">60 Q</option>
+        </select>
+
+        <button id="startExamBtn">Start Exam</button>
         <button id="skipBtn" title="Skip this command">Skip</button>
-        <button id="restartBtn" title="Restart from beginning">Restart</button>
+        <button id="restartBtn" title="Restart">Restart</button>
       </div>
 
-      <div class="muted" id="levelBadge">Difficulty: Easy</div>
+      <div class="pill" id="badge">Difficulty: Easy</div>
     </div>
 
     <div class="command" id="command"></div>
@@ -103,11 +130,15 @@
 
     <div class="progress"><div class="bar" id="bar"></div></div>
     <div class="stats" id="stats"></div>
+
+    <div class="hint">
+      Practice only in environments you own or have explicit permission to test. This is typing training, not an instruction to attack anything.
+    </div>
   </div>
 
 <script>
 /* =========================
-   Always Fresh Start + Manual Level
+   Always Fresh Start + Manual Level + Exam Mode
    - No localStorage
    - No randomness
    - Ordered commands per tool/level
@@ -116,252 +147,108 @@
 const TOOL_DATA = {
   linux: {
     easy: [
-      "whoami",
-      "pwd",
-      "ls",
-      "ls -la",
-      "cd ~",
-      "cd /",
-      "cd /home",
-      "mkdir test",
-      "rmdir test",
-      "touch notes.txt",
-      "cat notes.txt",
-      "echo hello",
-      "clear",
-      "date",
-      "uptime",
-      "id",
-      "uname -a",
-      "hostname",
-      "which python3",
-      "history | tail"
+      "whoami","pwd","ls","ls -la","cd ~","cd /","mkdir test","rmdir test","touch notes.txt","cat notes.txt",
+      "echo hello","clear","date","uptime","id","uname -a","hostname","which python3","history | tail","man ls"
     ],
     medium: [
-      "cp file.txt backup.txt",
-      "mv file.txt /tmp/file.txt",
-      "rm -f /tmp/file.txt",
-      "grep root /etc/passwd",
-      "grep -n \"ssh\" /etc/services",
-      "head -n 20 /etc/passwd",
-      "tail -n 20 /etc/passwd",
-      "wc -l /etc/passwd",
-      "cut -d: -f1 /etc/passwd | head",
-      "ps aux | head",
-      "ps aux | grep ssh",
-      "kill -9 1234",
-      "chmod +x script.sh",
-      "chmod 755 script.sh",
-      "chown root:root file",
-      "df -h",
-      "du -sh *",
-      "free -h",
-      "ip a",
-      "sudo -l"
+      "cp file.txt backup.txt","mv file.txt /tmp/file.txt","rm -f /tmp/file.txt","grep root /etc/passwd",
+      "head -n 20 /etc/passwd","tail -n 20 /etc/passwd","wc -l /etc/passwd","cut -d: -f1 /etc/passwd | head",
+      "ps aux | head","ps aux | grep ssh","chmod +x script.sh","chmod 755 script.sh","df -h","du -sh *","free -h",
+      "ip a","ss -lnt","curl -I http://example.com","wget -qO- http://example.com | head","sudo -l"
     ],
     hard: [
-      "find / -type f -name passwd 2>/dev/null",
-      "find /var/log -type f -name \"*.log\" 2>/dev/null | head",
-      "grep -R \"password\" /etc 2>/dev/null | head",
-      "tar -czvf backup.tar.gz /var/www/html",
-      "tar -xzvf backup.tar.gz",
-      "ss -lntup",
-      "journalctl -xe | head",
-      "useradd -m -s /bin/bash testuser",
-      "usermod -aG sudo testuser",
-      "passwd testuser",
-      "crontab -l",
-      "systemctl status ssh",
-      "systemctl restart ssh",
-      "iptables -L -n -v",
-      "chmod -R 755 /var/www/html",
-      "sed -n '1,120p' /etc/ssh/sshd_config",
-      "awk -F: '{print $1}' /etc/passwd | head",
-      "ln -s /etc/passwd passwd.link",
-      "curl -I http://example.com",
-      "python3 -m http.server 8080"
+      "find / -type f -name passwd 2>/dev/null","find /var/log -type f -name \"*.log\" 2>/dev/null | head",
+      "tar -czvf backup.tar.gz /var/www/html","tar -xzvf backup.tar.gz","journalctl -xe | head",
+      "systemctl status ssh","systemctl restart ssh","chmod -R 755 /var/www/html",
+      "sed -n '1,120p' /etc/ssh/sshd_config","awk -F: '{print $1}' /etc/passwd | head",
+      "ln -s /etc/passwd passwd.link","python3 -m http.server 8080","ssh user@192.168.1.10",
+      "scp file.txt user@192.168.1.10:/tmp/","rsync -av ./dir/ user@192.168.1.10:/tmp/dir/"
     ]
   },
 
   nmap: {
     easy: [
-      "nmap 192.168.1.1",
-      "nmap 192.168.1.0/24",
-      "nmap -sS 192.168.1.1",
-      "nmap -sV 192.168.1.1",
-      "nmap -Pn 192.168.1.1",
-      "nmap -F 192.168.1.1",
-      "nmap -p 80 192.168.1.1",
-      "nmap -p 22,80,443 192.168.1.1",
-      "nmap --top-ports 100 192.168.1.1",
-      "nmap -O 192.168.1.1"
+      "nmap 192.168.1.1","nmap 192.168.1.0/24","nmap -sS 192.168.1.1","nmap -sV 192.168.1.1","nmap -Pn 192.168.1.1",
+      "nmap -F 192.168.1.1","nmap -p 80 192.168.1.1","nmap -p 22,80,443 192.168.1.1","nmap --top-ports 100 192.168.1.1","nmap -O 192.168.1.1"
     ],
     medium: [
-      "nmap -A 192.168.1.1",
-      "nmap -p- 192.168.1.1",
-      "nmap -T4 -Pn 192.168.1.1",
-      "nmap -sS -sV 192.168.1.1",
-      "nmap -sU -p 53 192.168.1.1",
-      "nmap -sC 192.168.1.1",
-      "nmap --script default 192.168.1.1",
-      "nmap --script vuln 192.168.1.1",
-      "nmap --script http-title -p 80 192.168.1.1",
-      "nmap -oN scan.txt 192.168.1.1",
-      "nmap -oX scan.xml 192.168.1.1",
-      "nmap -iL targets.txt",
-      "nmap --exclude 192.168.1.10 192.168.1.0/24"
+      "nmap -A 192.168.1.1","nmap -p- 192.168.1.1","nmap -T4 -Pn 192.168.1.1","nmap -sS -sV 192.168.1.1",
+      "nmap -sC 192.168.1.1","nmap --script default 192.168.1.1","nmap --script vuln 192.168.1.1",
+      "nmap --script http-title -p 80 192.168.1.1","nmap -oN scan.txt 192.168.1.1","nmap -oX scan.xml 192.168.1.1",
+      "nmap -iL targets.txt","nmap --exclude 192.168.1.10 192.168.1.0/24","nmap -sU -p 53 192.168.1.1"
     ],
     hard: [
-      "nmap -sS -sV -O -p 1-65535 192.168.1.1",
-      "nmap -sS -sV -p 1-1000 --min-rate 1000 192.168.1.1",
-      "nmap --script smb-os-discovery -p 445 192.168.1.1",
-      "nmap --script smb-enum-shares -p 445 192.168.1.1",
-      "nmap --script ftp-anon -p 21 192.168.1.1",
-      "nmap --script ssh2-enum-algos -p 22 192.168.1.1",
-      "nmap --script http-enum -p 80 192.168.1.1",
-      "nmap --script dns-brute -p 53 domain.com",
-      "nmap -sV --version-all 192.168.1.1",
-      "nmap -D RND:10 192.168.1.1",
-      "nmap -f 192.168.1.1",
-      "nmap --data-length 50 192.168.1.1",
-      "nmap -oA fullscan 192.168.1.1"
+      "nmap -sS -sV -O -p 1-65535 192.168.1.1","nmap -sV --version-all 192.168.1.1","nmap --reason 192.168.1.1",
+      "nmap --script ftp-anon -p 21 192.168.1.1","nmap --script ssh2-enum-algos -p 22 192.168.1.1",
+      "nmap --script http-enum -p 80 192.168.1.1","nmap --data-length 50 192.168.1.1",
+      "nmap -oA fullscan 192.168.1.1","nmap --min-rate 1000 -T4 192.168.1.1","nmap -sS -p 1-1000 192.168.1.1"
     ]
   },
 
   sqlmap: {
     easy: [
-      "sqlmap -u http://target.local/index.php?id=1",
-      "sqlmap -u http://target.local/index.php?id=1 --batch",
-      "sqlmap -u http://target.local/index.php?id=1 --banner",
-      "sqlmap -u http://target.local/index.php?id=1 --current-user",
+      "sqlmap -u http://target.local/index.php?id=1","sqlmap -u http://target.local/index.php?id=1 --batch",
+      "sqlmap -u http://target.local/index.php?id=1 --banner","sqlmap -u http://target.local/index.php?id=1 --current-user",
       "sqlmap -u http://target.local/index.php?id=1 --current-db"
     ],
     medium: [
-      "sqlmap -u http://target.local/index.php?id=1 --dbs",
-      "sqlmap -u http://target.local/index.php?id=1 --tables",
-      "sqlmap -u http://target.local/index.php?id=1 --columns",
-      "sqlmap -u http://target.local/index.php?id=1 -D dbname --tables",
+      "sqlmap -u http://target.local/index.php?id=1 --dbs","sqlmap -u http://target.local/index.php?id=1 --tables",
+      "sqlmap -u http://target.local/index.php?id=1 --columns","sqlmap -u http://target.local/index.php?id=1 -D dbname --tables",
       "sqlmap -u http://target.local/index.php?id=1 -D dbname -T users --columns",
-      "sqlmap -u http://target.local/index.php?id=1 -D dbname -T users -C username,password --dump",
-      "sqlmap -r request.txt --dbs",
-      "sqlmap -r request.txt -D dbname --tables",
-      "sqlmap --cookie=\"PHPSESSID=abc123\" -u http://target.local/index.php?id=1 --dbs",
-      "sqlmap --random-agent -u http://target.local/index.php?id=1 --dbs",
-      "sqlmap --level=5 --risk=3 -u http://target.local/index.php?id=1 --dbs"
+      "sqlmap -r request.txt --dbs","sqlmap --cookie=\"PHPSESSID=abc123\" -u http://target.local/index.php?id=1 --dbs",
+      "sqlmap --random-agent -u http://target.local/index.php?id=1 --dbs","sqlmap --level=5 --risk=3 -u http://target.local/index.php?id=1 --dbs"
     ],
     hard: [
-      "sqlmap -u http://target.local/index.php?id=1 --dump",
-      "sqlmap -u http://target.local/index.php?id=1 --dump-all",
+      "sqlmap -u http://target.local/index.php?id=1 -D dbname -T users -C username,password --dump",
+      "sqlmap -r request.txt -D dbname -T users --dump --batch",
       "sqlmap -u http://target.local/index.php?id=1 --threads=10 --batch",
       "sqlmap --tamper=space2comment -u http://target.local/index.php?id=1 --dbs",
-      "sqlmap --tamper=between -u http://target.local/index.php?id=1 --dbs",
       "sqlmap --technique=BEUSTQ -u http://target.local/index.php?id=1 --dbs",
-      "sqlmap -u http://target.local/index.php?id=1 --fresh-queries --batch",
-      "sqlmap -u http://target.local/index.php?id=1 --flush-session",
-      "sqlmap -r request.txt --dump --batch",
-      "sqlmap -u http://target.local/index.php?id=1 --os-shell",
-      "sqlmap -u http://target.local/index.php?id=1 --file-read=/etc/passwd",
-      "sqlmap -u http://target.local/index.php?id=1 --file-write=shell.php --file-dest=/var/www/html/shell.php"
+      "sqlmap -u http://target.local/index.php?id=1 --flush-session"
     ]
   },
 
   metasploit: {
     easy: [
-      "msfconsole",
-      "help",
-      "version",
-      "search scanner",
-      "search portscan",
-      "use auxiliary/scanner/portscan/tcp",
-      "show options",
-      "set RHOSTS 192.168.1.0/24",
-      "set PORTS 22,80,443",
-      "run",
-      "back",
-      "sessions"
+      "msfconsole","help","version","search scanner","search portscan","show -h","exit -h","back","sessions -h","route -h"
     ],
     medium: [
-      "search type:auxiliary name:smb",
-      "use auxiliary/scanner/smb/smb_version",
-      "show options",
-      "set RHOSTS 192.168.1.0/24",
-      "set THREADS 20",
-      "run",
-      "use auxiliary/scanner/ssh/ssh_version",
-      "set RHOSTS 192.168.1.0/24",
-      "run",
-      "use auxiliary/scanner/http/http_version",
-      "set RHOSTS 192.168.1.0/24",
-      "run",
-      "set VERBOSE true"
+      "use auxiliary/scanner/portscan/tcp","show options","set RHOSTS 192.168.1.0/24","set PORTS 22,80,443","run",
+      "use auxiliary/scanner/http/http_version","set RHOSTS 192.168.1.0/24","run","use auxiliary/scanner/ssh/ssh_version","run"
     ],
     hard: [
-      "search type:auxiliary name:ftp",
-      "use auxiliary/scanner/ftp/ftp_version",
-      "set RHOSTS 192.168.1.0/24",
-      "set THREADS 30",
-      "run",
-      "use auxiliary/scanner/smb/smb_enumshares",
-      "set RHOSTS 192.168.1.0/24",
-      "run",
-      "search type:post name:enum",
-      "info auxiliary/scanner/smb/smb_version",
-      "show advanced",
-      "set ShowProgress true",
-      "set TIMEOUT 10",
-      "sessions -h"
+      "search type:auxiliary name:smb","use auxiliary/scanner/smb/smb_version","show options","set RHOSTS 192.168.1.0/24",
+      "set THREADS 20","run","info auxiliary/scanner/smb/smb_version","show advanced","set VERBOSE true","sessions"
     ]
   },
 
   meterpreter: {
     easy: [
-      "sysinfo",
-      "getuid",
-      "pwd",
-      "ls",
-      "cd ..",
-      "cat file.txt",
-      "ifconfig",
-      "ipconfig"
+      "help","sysinfo","getuid","pwd","ls","cd ..","mkdir loot","rmdir loot","background","exit"
     ],
     medium: [
-      "ps",
-      "shell",
-      "background",
-      "sessions",
-      "screenshot",
-      "upload file.txt",
-      "download secret.txt",
-      "mkdir loot",
-      "rmdir loot",
-      "edit file.txt"
+      "ps","shell","screenshot","upload file.txt","download secret.txt","portfwd -h","ipconfig","ifconfig","getpid","getsystem -h"
     ],
     hard: [
-      "keyscan_start",
-      "keyscan_dump",
-      "keyscan_stop",
-      "hashdump",
-      "webcam_list",
-      "webcam_snap",
-      "getsystem",
-      "migrate 1234",
-      "run post/windows/gather/enum_logged_on_users",
-      "run post/windows/manage/enable_rdp",
-      "portfwd add -l 3389 -p 3389 -r 127.0.0.1",
-      "clearev"
+      "run post/windows/gather/enum_logged_on_users","run post/windows/gather/enum_applications","run post/windows/gather/enum_patches",
+      "run post/multi/gather/env","portfwd add -l 3389 -p 3389 -r 127.0.0.1","migrate 1234","route add 10.0.0.0 255.255.255.0 1"
     ]
   }
 };
 
 const elTool = document.getElementById("tool");
 const elLevel= document.getElementById("level");
+const elMode = document.getElementById("mode");
+const elExamCount = document.getElementById("examCount");
+const btnStartExam = document.getElementById("startExamBtn");
+const btnSkip= document.getElementById("skipBtn");
+const btnRestart= document.getElementById("restartBtn");
+
 const elCmd  = document.getElementById("command");
 const elInput= document.getElementById("input");
 const elBar  = document.getElementById("bar");
 const elStats= document.getElementById("stats");
-const elBadge= document.getElementById("levelBadge");
-const btnSkip= document.getElementById("skipBtn");
-const btnRestart= document.getElementById("restartBtn");
+const elBadge= document.getElementById("badge");
 
 let list = [];
 let idx = 0;
@@ -369,25 +256,40 @@ let locked = false;
 
 let prevTyped = "";
 let totalKeys = 0;
-let wrongKeys = 0;
+let correctKeys = 0;
 
 let startTime = 0;
-let wpmSum = 0;
-let wpmCount = 0;
+let examStarted = false;
+
 let skippedCount = 0;
+let completedCount = 0; // commands completed (correct)
+let attemptedCount = 0; // completed + skipped (in exam)
+let examTotal = 20;
+
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 
 function setBadge(){
-  const lv = elLevel.value;
-  elBadge.textContent = `Difficulty: ${lv.charAt(0).toUpperCase() + lv.slice(1)}`;
+  elBadge.textContent = `Difficulty: ${cap(elLevel.value)}`;
 }
 
 function accuracyPct(){
   if(totalKeys <= 0) return 100;
-  return Math.max(0, Math.round(100 - (wrongKeys / totalKeys) * 100));
+  return Math.max(0, Math.round((correctKeys / totalKeys) * 100));
 }
-function avgWpm(){
-  if(wpmCount <= 0) return 0;
-  return Math.max(0, Math.round(wpmSum / wpmCount));
+
+function elapsedSeconds(){
+  if(!examStarted && elMode.value === "exam") return 0;
+  if(startTime === 0) return 0;
+  return Math.max(0, (Date.now() - startTime) / 1000);
+}
+
+function wpmNow(){
+  // WPM from correct keystrokes (approx; spaces count too)
+  const sec = elapsedSeconds();
+  if(sec <= 0.2) return 0;
+  const minutes = sec / 60;
+  const chars = correctKeys;
+  return Math.max(0, Math.round(((chars / 5) / minutes)));
 }
 
 function loadListFresh(){
@@ -396,28 +298,70 @@ function loadListFresh(){
   locked = false;
   prevTyped = "";
   totalKeys = 0;
-  wrongKeys = 0;
-  wpmSum = 0;
-  wpmCount = 0;
+  correctKeys = 0;
+
   skippedCount = 0;
+  completedCount = 0;
+  attemptedCount = 0;
+
+  examTotal = parseInt(elExamCount.value, 10) || 20;
+  examStarted = false;
+  startTime = 0;
 
   const tool = elTool.value;
   const level = elLevel.value;
   list = TOOL_DATA[tool][level].slice(); // ordered
+
   elStats.textContent = "";
-  elInput.disabled = false;
   elInput.value = "";
-  startTime = Date.now();
   setBadge();
+
+  applyModeUI();
   render();
 }
 
+function applyModeUI(){
+  const isExam = (elMode.value === "exam");
+  btnStartExam.style.display = isExam ? "inline-block" : "none";
+  elExamCount.style.display  = isExam ? "inline-block" : "none";
+
+  if(isExam){
+    elInput.disabled = !examStarted;
+    btnSkip.disabled = !examStarted;
+  } else {
+    elInput.disabled = false;
+    btnSkip.disabled = false;
+  }
+}
+
 function currentTarget(){
-  return list[idx] || null;
+  if(list.length === 0) return null;
+  const isExam = (elMode.value === "exam");
+  if(!isExam){
+    return list[idx] || null;
+  }
+  // Exam: cycle deterministically through list to reach examTotal
+  const pos = idx % list.length;
+  return list[pos];
 }
 
 function render(){
+  const isExam = (elMode.value === "exam");
   const target = currentTarget();
+
+  if(isExam && !examStarted){
+    elCmd.innerHTML = `<span class="pending">Exam ready. Press <span class="correct">Start Exam</span>.</span>`;
+    elBar.style.width = "0%";
+    elStats.innerHTML = `
+      <span class="muted">Mode: Exam</span>
+      <span class="muted">Questions: ${examTotal}</span>
+      <span class="muted">Accuracy: 100%</span>
+      <span class="muted">WPM: 0</span>
+    `;
+    return;
+  }
+
+  // Finished states
   if(!target){
     elCmd.innerHTML = `<span class="correct">🎉 Level Complete</span>`;
     elInput.value = "";
@@ -428,14 +372,14 @@ function render(){
       <span>Done: ${list.length}/${list.length}</span>
       <span class="muted">Skipped: ${skippedCount}</span>
       <span class="muted">Accuracy: ${accuracyPct()}%</span>
-      <span class="muted">Avg WPM: ${avgWpm()}</span>
+      <span class="muted">WPM: ${wpmNow()}</span>
       <span class="warn">Restart to train again</span>
     `;
     return;
   }
 
+  // Render colored command
   const typed = elInput.value;
-
   let html = "";
   for(let i=0;i<target.length;i++){
     if(i < typed.length){
@@ -448,35 +392,91 @@ function render(){
   }
   elCmd.innerHTML = html;
 
-  const pct = Math.min(100, Math.round((idx / list.length) * 100));
-  elBar.style.width = `${pct}%`;
+  // Progress
+  if(isExam){
+    const pct = Math.min(100, Math.round((attemptedCount / examTotal) * 100));
+    elBar.style.width = `${pct}%`;
+  } else {
+    const pct = Math.min(100, Math.round((idx / list.length) * 100));
+    elBar.style.width = `${pct}%`;
+  }
 
+  // Stats
+  if(isExam){
+    elStats.innerHTML = `
+      <span>Q: ${Math.min(attemptedCount+1, examTotal)}/${examTotal}</span>
+      <span class="muted">Completed: ${completedCount}</span>
+      <span class="muted">Skipped: ${skippedCount}</span>
+      <span class="muted">Accuracy: ${accuracyPct()}%</span>
+      <span class="muted">WPM: ${wpmNow()}</span>
+      <span class="muted">Time: ${Math.floor(elapsedSeconds())}s</span>
+    `;
+  } else {
+    elStats.innerHTML = `
+      <span>Step: ${Math.min(idx+1, list.length)}/${list.length}</span>
+      <span class="muted">Skipped: ${skippedCount}</span>
+      <span class="muted">Accuracy: ${accuracyPct()}%</span>
+      <span class="muted">WPM: ${wpmNow()}</span>
+    `;
+  }
+}
+
+function finishExam(){
+  elInput.disabled = true;
+  btnSkip.disabled = true;
+  locked = true;
+
+  const acc = accuracyPct();
+  const wpm = wpmNow();
+  const time = Math.floor(elapsedSeconds());
+
+  // Simple pass rule (tweak anytime)
+  const passed = (acc >= 85 && wpm >= 20);
+
+  elCmd.innerHTML = `<span class="correct">🏁 Exam Finished</span>`;
+  elBar.style.width = "100%";
   elStats.innerHTML = `
-    <span>Step: ${Math.min(idx+1, list.length)}/${list.length}</span>
+    <span class="${passed ? "correct" : "warn"}">${passed ? "Result: PASS" : "Result: NEED PRACTICE"}</span>
+    <span class="muted">Questions: ${examTotal}</span>
+    <span class="muted">Completed: ${completedCount}</span>
     <span class="muted">Skipped: ${skippedCount}</span>
-    <span class="muted">Accuracy: ${accuracyPct()}%</span>
-    <span class="muted">Avg WPM: ${avgWpm()}</span>
+    <span class="muted">Accuracy: ${acc}%</span>
+    <span class="muted">WPM: ${wpm}</span>
+    <span class="muted">Time: ${time}s</span>
+    <span class="warn">Restart to try again</span>
   `;
 }
 
 function advance(reason){
+  const isExam = (elMode.value === "exam");
   const target = currentTarget();
   if(!target) return;
 
-  if(reason === "done"){
-    const seconds = Math.max(0.2, (Date.now() - startTime) / 1000);
-    const wpm = ((target.length / 5) / (seconds / 60));
-    wpmSum += wpm;
-    wpmCount += 1;
-  } else if(reason === "skip"){
-    skippedCount += 1;
+  if(isExam){
+    attemptedCount += 1;
+    if(reason === "done") completedCount += 1;
+    if(reason === "skip") skippedCount += 1;
+
+    idx += 1; // move forward (cycled by modulo)
+    locked = false;
+    prevTyped = "";
+    elInput.value = "";
+
+    if(attemptedCount >= examTotal){
+      finishExam();
+      return;
+    }
+
+    render();
+    return;
   }
 
+  // Practice
+  if(reason === "skip") skippedCount += 1;
   idx += 1;
   locked = false;
   prevTyped = "";
   elInput.value = "";
-  startTime = Date.now();
   render();
 }
 
@@ -485,13 +485,14 @@ function onInput(){
   const target = currentTarget();
   if(!target) return;
 
+  // In exam mode, timer starts at first keypress if started already via button
   const typed = elInput.value;
 
-  // count only newly added keystrokes
+  // count only newly added characters (keystrokes)
   if(typed.length > prevTyped.length){
     for(let i=prevTyped.length; i<typed.length; i++){
       totalKeys += 1;
-      if(target[i] !== typed[i]) wrongKeys += 1;
+      if(target[i] === typed[i]) correctKeys += 1;
     }
   }
   prevTyped = typed;
@@ -500,12 +501,13 @@ function onInput(){
 
   if(typed === target){
     locked = true;
-    setTimeout(()=>advance("done"), 250);
+    setTimeout(()=>advance("done"), 200);
   }
 }
 
 function skip(){
   if(locked) return;
+  if(elMode.value === "exam" && !examStarted) return;
   if(!currentTarget()) return;
   locked = true;
   setTimeout(()=>advance("skip"), 120);
@@ -515,13 +517,31 @@ function restart(){
   loadListFresh();
 }
 
+function startExam(){
+  if(elMode.value !== "exam") return;
+  examTotal = parseInt(elExamCount.value, 10) || 20;
+  examStarted = true;
+  startTime = Date.now();
+  elInput.disabled = false;
+  btnSkip.disabled = false;
+  elInput.focus();
+  render();
+}
+
 // Events
 elInput.addEventListener("input", onInput);
 btnSkip.addEventListener("click", skip);
 btnRestart.addEventListener("click", restart);
+btnStartExam.addEventListener("click", startExam);
 
 elTool.addEventListener("change", loadListFresh);
 elLevel.addEventListener("change", loadListFresh);
+elExamCount.addEventListener("change", loadListFresh);
+
+elMode.addEventListener("change", ()=>{
+  // switch mode → fresh start
+  loadListFresh();
+});
 
 // Boot
 loadListFresh();
