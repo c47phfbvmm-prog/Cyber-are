@@ -72,7 +72,7 @@ select,button,input{
 </div>
 
 <script>
-/* ===== TOOL COMMANDS ===== */
+/* ===== COMMAND DATABASE ===== */
 const commands = {
 linux:[
   "whoami",
@@ -119,8 +119,9 @@ sqlmap:[
 };
 
 /* ===== CORE LOGIC ===== */
-let target="",typed="";
-let done=0,total=15,errors=0,startTime=null;
+let target="", typed="";
+let done=0, total=15, errors=0;
+let locked=false;
 
 function pickCommand(){
   const tool=document.getElementById("tool").value;
@@ -143,44 +144,53 @@ function render(){
 }
 
 function nextCommand(){
+  locked=false;
   target=pickCommand();
   typed="";
   document.getElementById("input").value="";
-  startTime=Date.now();
   render();
   document.getElementById("bar").style.width=`${(done/total)*100}%`;
 }
 
 document.getElementById("input").addEventListener("input",e=>{
+  if(locked) return;
+
   typed=e.target.value;
   render();
+
   if(!target.startsWith(typed)) errors++;
+
   if(typed===target){
+    locked=true;
     done++;
+
     if(done>=total){
       document.getElementById("stats").innerHTML=
-      `✔ Session Complete | Accuracy ${Math.max(0,100-errors)}%`;
+        `✔ Session Complete | Accuracy ${Math.max(0,100-errors)}%`;
       return;
     }
+
     setTimeout(nextCommand,500);
   }
 });
 
 document.getElementById("skipBtn").onclick=()=>{
+  if(locked) return;
+  locked=true;
   done++;
   errors+=target.length;
   nextCommand();
 };
 
 document.getElementById("resetBtn").onclick=()=>{
-  done=0;errors=0;
+  done=0; errors=0; locked=false;
   document.getElementById("bar").style.width="0%";
   document.getElementById("stats").textContent="";
   nextCommand();
 };
 
 document.getElementById("tool").onchange=()=>{
-  done=0;errors=0;
+  done=0; errors=0; locked=false;
   document.getElementById("bar").style.width="0%";
   document.getElementById("stats").textContent="";
   nextCommand();
