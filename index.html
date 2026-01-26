@@ -13,7 +13,7 @@
     height:100vh; margin:0; padding:16px;
   }
   .app{
-    width:min(900px, 100%);
+    width:min(980px, 100%);
     background:#111;
     padding:22px;
     border-radius:14px;
@@ -33,7 +33,7 @@
     border-radius:10px;
     font-family:inherit;
   }
-  select{ min-width: 180px; }
+  select{ min-width: 190px; }
   button{ cursor:pointer; }
   button:active{ transform: translateY(1px); }
   input{
@@ -115,29 +115,241 @@
 
 const TOOL_DATA = {
   linux: {
-    easy: ["whoami","pwd","ls","id"],
-    medium: ["ls -la","cd /var/www/html","history | tail","ps aux"],
-    hard: ["find / -type f -name passwd 2>/dev/null","chmod +x exploit.sh","du -sh *","sudo -l"]
+    easy: [
+      "whoami",
+      "pwd",
+      "ls",
+      "ls -la",
+      "cd ~",
+      "cd /",
+      "cd /home",
+      "mkdir test",
+      "rmdir test",
+      "touch notes.txt",
+      "cat notes.txt",
+      "echo hello",
+      "clear",
+      "date",
+      "uptime",
+      "id",
+      "uname -a",
+      "hostname",
+      "which python3",
+      "history | tail"
+    ],
+    medium: [
+      "cp file.txt backup.txt",
+      "mv file.txt /tmp/file.txt",
+      "rm -f /tmp/file.txt",
+      "grep root /etc/passwd",
+      "grep -n \"ssh\" /etc/services",
+      "head -n 20 /etc/passwd",
+      "tail -n 20 /etc/passwd",
+      "wc -l /etc/passwd",
+      "cut -d: -f1 /etc/passwd | head",
+      "ps aux | head",
+      "ps aux | grep ssh",
+      "kill -9 1234",
+      "chmod +x script.sh",
+      "chmod 755 script.sh",
+      "chown root:root file",
+      "df -h",
+      "du -sh *",
+      "free -h",
+      "ip a",
+      "sudo -l"
+    ],
+    hard: [
+      "find / -type f -name passwd 2>/dev/null",
+      "find /var/log -type f -name \"*.log\" 2>/dev/null | head",
+      "grep -R \"password\" /etc 2>/dev/null | head",
+      "tar -czvf backup.tar.gz /var/www/html",
+      "tar -xzvf backup.tar.gz",
+      "ss -lntup",
+      "journalctl -xe | head",
+      "useradd -m -s /bin/bash testuser",
+      "usermod -aG sudo testuser",
+      "passwd testuser",
+      "crontab -l",
+      "systemctl status ssh",
+      "systemctl restart ssh",
+      "iptables -L -n -v",
+      "chmod -R 755 /var/www/html",
+      "sed -n '1,120p' /etc/ssh/sshd_config",
+      "awk -F: '{print $1}' /etc/passwd | head",
+      "ln -s /etc/passwd passwd.link",
+      "curl -I http://example.com",
+      "python3 -m http.server 8080"
+    ]
   },
+
   nmap: {
-    easy: ["nmap 192.168.1.1","nmap -sS 192.168.1.1"],
-    medium: ["nmap -sV 192.168.1.1","nmap -p 22,80,443 192.168.1.1","nmap -T4 -Pn 192.168.1.1"],
-    hard: ["nmap -A 192.168.1.1","nmap -p- 192.168.1.1","nmap --script vuln 192.168.1.1","nmap -sS -sV -O -p 1-65535 192.168.1.1","nmap -oN scan.txt 192.168.1.1"]
+    easy: [
+      "nmap 192.168.1.1",
+      "nmap 192.168.1.0/24",
+      "nmap -sS 192.168.1.1",
+      "nmap -sV 192.168.1.1",
+      "nmap -Pn 192.168.1.1",
+      "nmap -F 192.168.1.1",
+      "nmap -p 80 192.168.1.1",
+      "nmap -p 22,80,443 192.168.1.1",
+      "nmap --top-ports 100 192.168.1.1",
+      "nmap -O 192.168.1.1"
+    ],
+    medium: [
+      "nmap -A 192.168.1.1",
+      "nmap -p- 192.168.1.1",
+      "nmap -T4 -Pn 192.168.1.1",
+      "nmap -sS -sV 192.168.1.1",
+      "nmap -sU -p 53 192.168.1.1",
+      "nmap -sC 192.168.1.1",
+      "nmap --script default 192.168.1.1",
+      "nmap --script vuln 192.168.1.1",
+      "nmap --script http-title -p 80 192.168.1.1",
+      "nmap -oN scan.txt 192.168.1.1",
+      "nmap -oX scan.xml 192.168.1.1",
+      "nmap -iL targets.txt",
+      "nmap --exclude 192.168.1.10 192.168.1.0/24"
+    ],
+    hard: [
+      "nmap -sS -sV -O -p 1-65535 192.168.1.1",
+      "nmap -sS -sV -p 1-1000 --min-rate 1000 192.168.1.1",
+      "nmap --script smb-os-discovery -p 445 192.168.1.1",
+      "nmap --script smb-enum-shares -p 445 192.168.1.1",
+      "nmap --script ftp-anon -p 21 192.168.1.1",
+      "nmap --script ssh2-enum-algos -p 22 192.168.1.1",
+      "nmap --script http-enum -p 80 192.168.1.1",
+      "nmap --script dns-brute -p 53 domain.com",
+      "nmap -sV --version-all 192.168.1.1",
+      "nmap -D RND:10 192.168.1.1",
+      "nmap -f 192.168.1.1",
+      "nmap --data-length 50 192.168.1.1",
+      "nmap -oA fullscan 192.168.1.1"
+    ]
   },
+
   sqlmap: {
-    easy: ["sqlmap -u http://target.local/index.php?id=1"],
-    medium: ["sqlmap -u http://target.local/index.php?id=1 --dbs","sqlmap -u http://target.local/index.php?id=1 --tables","sqlmap -r request.txt --dbs","sqlmap -u http://target.local/index.php?id=1 --batch"],
-    hard: ["sqlmap -u http://target.local/index.php?id=1 --columns","sqlmap -u http://target.local/index.php?id=1 --dump","sqlmap -u http://target.local/index.php?id=1 --risk=3 --level=5","sqlmap --tamper=space2comment -u http://target.local/index.php?id=1"]
+    easy: [
+      "sqlmap -u http://target.local/index.php?id=1",
+      "sqlmap -u http://target.local/index.php?id=1 --batch",
+      "sqlmap -u http://target.local/index.php?id=1 --banner",
+      "sqlmap -u http://target.local/index.php?id=1 --current-user",
+      "sqlmap -u http://target.local/index.php?id=1 --current-db"
+    ],
+    medium: [
+      "sqlmap -u http://target.local/index.php?id=1 --dbs",
+      "sqlmap -u http://target.local/index.php?id=1 --tables",
+      "sqlmap -u http://target.local/index.php?id=1 --columns",
+      "sqlmap -u http://target.local/index.php?id=1 -D dbname --tables",
+      "sqlmap -u http://target.local/index.php?id=1 -D dbname -T users --columns",
+      "sqlmap -u http://target.local/index.php?id=1 -D dbname -T users -C username,password --dump",
+      "sqlmap -r request.txt --dbs",
+      "sqlmap -r request.txt -D dbname --tables",
+      "sqlmap --cookie=\"PHPSESSID=abc123\" -u http://target.local/index.php?id=1 --dbs",
+      "sqlmap --random-agent -u http://target.local/index.php?id=1 --dbs",
+      "sqlmap --level=5 --risk=3 -u http://target.local/index.php?id=1 --dbs"
+    ],
+    hard: [
+      "sqlmap -u http://target.local/index.php?id=1 --dump",
+      "sqlmap -u http://target.local/index.php?id=1 --dump-all",
+      "sqlmap -u http://target.local/index.php?id=1 --threads=10 --batch",
+      "sqlmap --tamper=space2comment -u http://target.local/index.php?id=1 --dbs",
+      "sqlmap --tamper=between -u http://target.local/index.php?id=1 --dbs",
+      "sqlmap --technique=BEUSTQ -u http://target.local/index.php?id=1 --dbs",
+      "sqlmap -u http://target.local/index.php?id=1 --fresh-queries --batch",
+      "sqlmap -u http://target.local/index.php?id=1 --flush-session",
+      "sqlmap -r request.txt --dump --batch",
+      "sqlmap -u http://target.local/index.php?id=1 --os-shell",
+      "sqlmap -u http://target.local/index.php?id=1 --file-read=/etc/passwd",
+      "sqlmap -u http://target.local/index.php?id=1 --file-write=shell.php --file-dest=/var/www/html/shell.php"
+    ]
   },
+
   metasploit: {
-    easy: ["msfconsole","help","version","search scanner"],
-    medium: ["use auxiliary/scanner/portscan/tcp","show options","set RHOSTS 192.168.1.0/24","set PORTS 22,80,443","run"],
-    hard: ["search type:auxiliary name:smb","use auxiliary/scanner/smb/smb_version","set THREADS 20","set RHOSTS 192.168.1.0/24","run","sessions","sessions -h"]
+    easy: [
+      "msfconsole",
+      "help",
+      "version",
+      "search scanner",
+      "search portscan",
+      "use auxiliary/scanner/portscan/tcp",
+      "show options",
+      "set RHOSTS 192.168.1.0/24",
+      "set PORTS 22,80,443",
+      "run",
+      "back",
+      "sessions"
+    ],
+    medium: [
+      "search type:auxiliary name:smb",
+      "use auxiliary/scanner/smb/smb_version",
+      "show options",
+      "set RHOSTS 192.168.1.0/24",
+      "set THREADS 20",
+      "run",
+      "use auxiliary/scanner/ssh/ssh_version",
+      "set RHOSTS 192.168.1.0/24",
+      "run",
+      "use auxiliary/scanner/http/http_version",
+      "set RHOSTS 192.168.1.0/24",
+      "run",
+      "set VERBOSE true"
+    ],
+    hard: [
+      "search type:auxiliary name:ftp",
+      "use auxiliary/scanner/ftp/ftp_version",
+      "set RHOSTS 192.168.1.0/24",
+      "set THREADS 30",
+      "run",
+      "use auxiliary/scanner/smb/smb_enumshares",
+      "set RHOSTS 192.168.1.0/24",
+      "run",
+      "search type:post name:enum",
+      "info auxiliary/scanner/smb/smb_version",
+      "show advanced",
+      "set ShowProgress true",
+      "set TIMEOUT 10",
+      "sessions -h"
+    ]
   },
+
   meterpreter: {
-    easy: ["sysinfo","getuid","pwd","ls"],
-    medium: ["ps","shell","cd ..","background"],
-    hard: ["upload file.txt","download secret.txt","screenshot","keyscan_start","keyscan_dump","keyscan_stop"]
+    easy: [
+      "sysinfo",
+      "getuid",
+      "pwd",
+      "ls",
+      "cd ..",
+      "cat file.txt",
+      "ifconfig",
+      "ipconfig"
+    ],
+    medium: [
+      "ps",
+      "shell",
+      "background",
+      "sessions",
+      "screenshot",
+      "upload file.txt",
+      "download secret.txt",
+      "mkdir loot",
+      "rmdir loot",
+      "edit file.txt"
+    ],
+    hard: [
+      "keyscan_start",
+      "keyscan_dump",
+      "keyscan_stop",
+      "hashdump",
+      "webcam_list",
+      "webcam_snap",
+      "getsystem",
+      "migrate 1234",
+      "run post/windows/gather/enum_logged_on_users",
+      "run post/windows/manage/enable_rdp",
+      "portfwd add -l 3389 -p 3389 -r 127.0.0.1",
+      "clearev"
+    ]
   }
 };
 
@@ -288,7 +500,7 @@ function onInput(){
 
   if(typed === target){
     locked = true;
-    setTimeout(()=>advance("done"), 300);
+    setTimeout(()=>advance("done"), 250);
   }
 }
 
@@ -296,7 +508,7 @@ function skip(){
   if(locked) return;
   if(!currentTarget()) return;
   locked = true;
-  setTimeout(()=>advance("skip"), 150);
+  setTimeout(()=>advance("skip"), 120);
 }
 
 function restart(){
@@ -308,16 +520,8 @@ elInput.addEventListener("input", onInput);
 btnSkip.addEventListener("click", skip);
 btnRestart.addEventListener("click", restart);
 
-elTool.addEventListener("change", ()=>{
-  // Always fresh start on tool change
-  loadListFresh();
-});
-
-elLevel.addEventListener("change", ()=>{
-  // Always fresh start on level change
-  setBadge();
-  loadListFresh();
-});
+elTool.addEventListener("change", loadListFresh);
+elLevel.addEventListener("change", loadListFresh);
 
 // Boot
 loadListFresh();
